@@ -48,6 +48,7 @@ namespace RdcFileRepack
                 rdcFile.SaveToRdc(rdcPathNew);
 
 				Console.WriteLine($"重新保存为 {rdcPathNew}");
+				Console.WriteLine("如需减小体积请在RenderDoc内执行 [Tools/Recompress Capture]");
             }
 
 			Console.ReadKey();

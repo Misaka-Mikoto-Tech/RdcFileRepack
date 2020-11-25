@@ -123,6 +123,7 @@ namespace Rdc
             else
             {
                 Console.WriteLine($"unsupported format {ext}");
+                return;
             }
 
             FIBITMAP bmp = FreeImage.Load(fiFormat, path, FREE_IMAGE_LOAD_FLAGS.DEFAULT);

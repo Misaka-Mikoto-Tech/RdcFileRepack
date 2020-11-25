@@ -109,6 +109,7 @@ namespace Rdc
             BinaryWriter bw;
             try
             {
+                File.Delete(path);
                 fs = File.OpenWrite(path);
                 bw = new BinaryWriter(fs);
             }
