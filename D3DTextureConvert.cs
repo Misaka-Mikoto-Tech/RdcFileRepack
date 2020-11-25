@@ -113,8 +113,20 @@ namespace Rdc
         public static void LoadTextureDataFromFile(Chunk_CreateTexture2D texChunk, string path)
         {
             FREE_IMAGE_FORMAT fiFormat = default;
-            FIBITMAP bmp = FreeImage.LoadEx(path, ref fiFormat);
-            if (bmp == null)
+
+            string ext = Path.GetExtension(path).ToLower();
+
+            if (ext == ".bmp")
+                fiFormat = FREE_IMAGE_FORMAT.FIF_BMP;
+            else if (ext == ".tga")
+                fiFormat = FREE_IMAGE_FORMAT.FIF_TARGA;
+            else
+            {
+                Console.WriteLine($"unsupported format {ext}");
+            }
+
+            FIBITMAP bmp = FreeImage.Load(fiFormat, path, FREE_IMAGE_LOAD_FLAGS.DEFAULT);
+            if (bmp == null || bmp.IsNull)
             {
                 Console.WriteLine($"加载图片文件失败 {path}");
                 return;

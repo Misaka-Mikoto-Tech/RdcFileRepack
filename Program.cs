@@ -40,6 +40,7 @@ namespace RdcFileRepack
             }
             else if (mode == "repack") // 重新生成
             {
+				//rdcFile.SetDeviceName("NVIDIA GeForce GTX 8848 8GB");
 				rdcFile.LoadTexturesFromFile();
 
 				string rdcPathNew = Path.GetFileNameWithoutExtension(rdcPath);

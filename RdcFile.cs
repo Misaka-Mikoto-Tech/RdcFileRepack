@@ -34,6 +34,11 @@ namespace Rdc
             }
         }
 
+        public void SetDeviceName(string name)
+        {
+            // TODO
+        }
+
         public void LoadFromRdc(string path)
         {
             Console.WriteLine($"正在打开文件 {path}");
