@@ -22,6 +22,7 @@ namespace Rdc
     public unsafe class ChunkMeta : ISerializable
     {
         public int index { get; private set; }
+        public int eventId { get; private set; }
 
         public long offset;
         public long headerLength;
@@ -39,9 +40,10 @@ namespace Rdc
 
         public D3D11Chunk chunkType;
 
-        public ChunkMeta(int index)
+        public ChunkMeta(int index, int eventId)
         {
             this.index = index;
+            this.eventId = eventId;
         }
 
         public override string ToString()

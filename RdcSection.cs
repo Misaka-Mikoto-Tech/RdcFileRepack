@@ -30,12 +30,14 @@ namespace Rdc
         public ExtThumbnailHeader thumbHeader;
 
         public List<ChunkMeta> chunkMetas { get; private set; } // 仅 FrameCapture 类型的 section 存在
+        /// <summary>
+        /// CaptureBegin 的索引ID，RenderDoc 的 EventId 为真实索引减去此值
+        /// </summary>
+        public int CaptureBeginChunkIndex { get; private set; }
 
         public byte[] diskData { get; private set; }
         public byte[] uncompressedData { get; private set; }
         public byte[] thumbPixels { get; private set; }
-
-        private ChunkMeta.UpdateSubresourceChunkInfo fontTextureChunk;
 
         public void LoadFromJson(JsonData jsonData, StringBuilder sb)
         {
@@ -120,10 +122,19 @@ namespace Rdc
             using(BinaryReader br = new BinaryReader(ms))
             {
                 int index = 1; // RenderDoc的chunk从1开始计数
+                int eventBeginIndex = 0;
                 while(ms.Position < uncompressedData.Length)
                 {
-                    var chunkMeta = new ChunkMeta(index++);
+                    int eventId = 0;
+                    if (eventBeginIndex != 0)
+                        eventId = index - eventBeginIndex;
+
+                    var chunkMeta = new ChunkMeta(index, eventId);
                     chunkMeta.LoadFromStream(br);
+                    index++;
+
+                    if (chunkMeta.chunkID == (int)SystemChunk.CaptureBegin)
+                        eventBeginIndex = chunkMeta.index;
 
                     chunkMetas.Add(chunkMeta);
                 }
@@ -253,75 +264,29 @@ namespace Rdc
             for (int i = 0, imax = chunkMetas.Count; i < imax; i++)
             {
                 var chunk = chunkMetas[i];
-                sb.AppendLine($"{i + 1,-4}  {chunk, -30}  {chunk.chunkID, -4}  offset:{chunk.offset,-8}  len:{chunk.fullLength,-8}".Trim());
+                sb.AppendLine($"{chunk.index,-4} {chunk.eventId, -4}  {chunk, -30}  {chunk.chunkID, -4}  offset:{chunk.offset,-8}  len:{chunk.fullLength,-8}".Trim());
             }
 
             return sb.ToString();
         }
 
         /// <summary>
-        /// 将FontTexture数据保存到文件
+        /// 移除指定范围的chunk
         /// </summary>
-        /// <param name="fileName"></param>
-        public void SaveFontTexture(string fileName)
+        /// <param name="from"></param>
+        /// <param name="to"></param>
+        public void RemoveChunkByEventId(int from, int to)
         {
-            //var chunkInfo = fontTextureChunk.updateSubresourceChunkInfo;
-
-            //Bitmap bitmap = new Bitmap((int)chunkInfo.pBox.right, (int)chunkInfo.pBox.bottom, PixelFormat.Format24bppRgb);
-            //BitmapData bitmapData = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
-
-            //fixed (void* p = &uncompressedData[(int)chunkInfo.ContentsOffset]) // 一般此贴图都是2的幂，因此忽略stride判断
-            //{
-            //    byte* pSrc = (byte*)p;
-            //    byte* pDst = (byte*)bitmapData.Scan0;
-
-            //    int dataSize = (int)chunkInfo.ContentsLength;
-            //    for (int i = 0; i < dataSize; i++)
-            //    {
-            //        byte val = *pSrc++;
-            //        *pDst++ = val; // R
-            //        *pDst++ = val; // G
-            //        *pDst++ = val; // B
-            //    }
-            //}
-
-            //bitmap.UnlockBits(bitmapData);
-
-            //bitmap.Save(fileName);
+            from += CaptureBeginChunkIndex;
+            to += CaptureBeginChunkIndex;
         }
 
         /// <summary>
-        /// 从图片加载FontTexture数据
+        /// 重新构建数据(移除了Chunk后数据发生了变化)
         /// </summary>
-        /// <param name="fileName"></param>
-        public void LoadFontTexture(string fileName)
+        public void Rebuild()
         {
-            //var chunkInfo = fontTextureChunk.updateSubresourceChunkInfo;
 
-            //Bitmap bitmap = new Bitmap(fileName, false);
-            //if(bitmap.Width != (int)chunkInfo.pBox.right || bitmap.Height != (int)chunkInfo.pBox.bottom)
-            //{
-            //    Console.WriteLine($"字体贴图的尺寸必须为:{chunkInfo.pBox.right}*{chunkInfo.pBox.bottom}");
-            //    return;
-            //}
-
-            //BitmapData bitmapData = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
-            //fixed (void* p = &uncompressedData[(int)chunkInfo.ContentsOffset]) // 一般此贴图都是2的幂，因此忽略stride判断
-            //{
-            //    byte* pSrc = (byte*)bitmapData.Scan0;
-            //    byte* pDst = (byte*)p;
-
-            //    int dataSize = (int)chunkInfo.ContentsLength;
-            //    for (int i = 0; i < dataSize; i++)
-            //    {
-            //        byte val = *pSrc;
-            //        *pDst++ = val;
-
-            //        pSrc += 3; // RGB
-            //    }
-            //}
-
-            //bitmap.UnlockBits(bitmapData);
         }
     }
 
