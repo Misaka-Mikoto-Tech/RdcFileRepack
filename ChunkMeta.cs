@@ -24,6 +24,8 @@ namespace Rdc
         public int index { get; private set; }
         public int eventId { get; private set; }
 
+        public bool isRemoved;
+
         public long offset;
         public long headerLength;
         public long fullLength { get { return headerLength + (long)length; } }
@@ -44,6 +46,7 @@ namespace Rdc
         {
             this.index = index;
             this.eventId = eventId;
+            isRemoved = false;
         }
 
         public override string ToString()

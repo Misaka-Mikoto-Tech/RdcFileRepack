@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 /// <summary>
 /// D3D11 相关结构体的Reader
 /// </summary>
-public static class D3D11Reader
+public unsafe static class D3D11Reader
 {
     /// <summary>
     /// 由于C#没有偏特化，因此使用手动注册回调的方式实现泛型读取器的重用
@@ -25,6 +25,7 @@ public static class D3D11Reader
         _dicReadFuncs.Add(typeof(D3D11_RENDER_TARGET_VIEW_DESC), Read_D3D11_RENDER_TARGET_VIEW_DESC);
         _dicReadFuncs.Add(typeof(D3D11_DEPTH_STENCIL_VIEW_DESC), Read_D3D11_DEPTH_STENCIL_VIEW_DESC);
         _dicReadFuncs.Add(typeof(D3D11_BUFFER_DESC), Read_D3D11_BUFFER_DESC);
+        _dicReadFuncs.Add(typeof(D3D11InitParams), Read_D3D11InitParams);
     }
 
     public static object Read_D3D11_TEXTURE2D_DESC(BinaryReader br)
@@ -283,6 +284,50 @@ public static class D3D11Reader
     }
 
     /// <summary>
+    /// 读取首个chunk(DriverInit)时会用到，保存了DeviceName等信息
+    /// </summary>
+    /// <param name="br"></param>
+    /// <returns></returns>
+    public static object Read_D3D11InitParams(BinaryReader br)
+    {
+        D3D11InitParams initParams = new D3D11InitParams();
+        initParams.offset = br.BaseStream.Position;
+
+        initParams.DriverType = (D3D_DRIVER_TYPE)br.ReadInt32();
+        initParams.Flags = br.ReadUInt32();
+        initParams.SDKVersion = br.ReadUInt32();
+        initParams.NumFeatureLevels = br.ReadUInt32();
+        initParams.FeatureLevels = Read_Primitive_Array<D3D_FEATURE_LEVEL>(br);
+        initParams.AdapterDesc = Read_DXGI_ADAPTER_DESC(br) as DXGI_ADAPTER_DESC;
+
+        initParams.length = br.BaseStream.Position - initParams.offset;
+        return initParams;
+    }
+
+    public static object Read_DXGI_ADAPTER_DESC(BinaryReader br)
+    {
+        DXGI_ADAPTER_DESC desc = new DXGI_ADAPTER_DESC();
+        desc.offset = br.BaseStream.Position;
+
+        desc.Description = Utils.ReadChunkString(br);
+        desc.DescriptionLen = desc.Description.Length;
+        desc.VendorId = br.ReadUInt32();
+        desc.DeviceId = br.ReadUInt32();
+        desc.SubSysId = br.ReadUInt32();
+        desc.Revision = br.ReadUInt32();
+        desc.DedicatedVideoMemory = br.ReadUInt64();
+        desc.DedicatedSystemMemory = br.ReadUInt64();
+        desc.SharedSystemMemory = br.ReadUInt64();
+        desc.AdapterLuid.LowPart = br.ReadUInt32();
+        desc.AdapterLuid.HighPart = br.ReadInt32();
+
+        desc.length = br.BaseStream.Position - desc.offset;
+        return desc;
+    }
+
+
+    #region 辅助函数
+    /// <summary>
     /// 读取可空类型数据
     /// </summary>
     /// <typeparam name="T"></typeparam>
@@ -305,6 +350,84 @@ public static class D3D11Reader
     }
 
     /// <summary>
+    /// 读取基本类型
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="br"></param>
+    /// <returns></returns>
+    public static T Read_Primitive<T>(BinaryReader br) where T:unmanaged
+    {
+        Type t = typeof(T);
+        if (t.IsEnum)
+            t = t.GetEnumUnderlyingType();
+
+        Debug.Assert(t.IsPrimitive);
+
+        T tVal = default;
+        byte[] buff = new byte[8];
+        fixed(void * p = &buff[0])
+        {
+            if (t == typeof(byte) || t == typeof(sbyte) || t == typeof(bool))
+            {
+                br.Read(buff, 0, 1);
+                *(byte*)&tVal = *(byte *)p;
+            }
+            else if (t == typeof(short) || t == typeof(short))
+            {
+                br.Read(buff, 0, 2);
+                *(short*)&tVal = *(short*)p;
+            }
+            else if(t == typeof(int) || t == typeof(uint))
+            {
+                br.Read(buff, 0, 4);
+                *(int*)&tVal = *(int*)p;
+            }
+            else if(t == typeof(float))
+            {
+                br.Read(buff, 0, 4);
+                *(float*)&tVal = *(float*)p;
+            }
+            else if (t == typeof(double))
+            {
+                br.Read(buff, 0, 8);
+                *(double*)&tVal = *(double*)p;
+            }
+            else if(t == typeof(long) || t == typeof(ulong))
+            {
+                br.Read(buff, 0, 8);
+                *(long*)&tVal = *(long*)p;
+            }
+            else
+            {
+                throw new Exception($"unsupported type {t.Name}");
+            }
+        }
+
+        return tVal;
+    }
+
+    /// <summary>
+    /// 读取基础类型数组
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="br"></param>
+    /// <returns></returns>
+    public static T[] Read_Primitive_Array<T>(BinaryReader br) where T:unmanaged
+    {
+        ulong arrayCount = br.ReadUInt64();
+        if (arrayCount == 0)
+            return null;
+
+        T[] arr = new T[arrayCount];
+        for (int i = 0; i < (int)arrayCount; i++)
+        {
+            arr[i] = Read_Primitive<T>(br);
+        }
+
+        return arr;
+    }
+
+    /// <summary>
     /// 读取数组
     /// </summary>
     /// <typeparam name="T"></typeparam>
@@ -313,7 +436,8 @@ public static class D3D11Reader
     public static T[] Read_D3D11_Array<T>(BinaryReader br) where T:class, new()
     {
         Func<BinaryReader, object> readFunc;
-        if(!_dicReadFuncs.TryGetValue(typeof(T), out readFunc))
+
+        if (!_dicReadFuncs.TryGetValue(typeof(T), out readFunc))
         {
             throw new Exception($"unexpected type {typeof(T).Name} when read");
         }
@@ -394,6 +518,8 @@ public static class D3D11Reader
         }
         
     }
+
+    #endregion
 
     /// <summary>
     /// 从流中读取数据填充 data 参数（D3D11_SUBRESOURCE_DATA初始化的第二步）

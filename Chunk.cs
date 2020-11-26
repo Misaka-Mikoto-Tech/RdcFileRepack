@@ -11,6 +11,8 @@ namespace Rdc
     public interface IChunk
     {
         int index { get; }
+        int eventId { get; }
+        bool isRemoved { get; }
         /// <summary>
         /// 资源名，由Chunk_SetDebugName设置, 某些chunk可能没有name
         /// </summary>
@@ -40,6 +42,8 @@ namespace Rdc
     public class ChunkBase : IChunk
     {
         public int index => chunkMeta.index;
+        public int eventId => chunkMeta.eventId;
+        public bool isRemoved => chunkMeta.isRemoved;
         /// <summary>
         /// 资源名，由Chunk_SetDebugName设置, 某些chunk可能没有name
         /// </summary>
@@ -71,7 +75,7 @@ namespace Rdc
             if (string.IsNullOrEmpty(name))
                 return chunkMeta.ToString();
             else
-                return $"{chunkMeta, -40}{name}";
+                return $"{chunkMeta, -40}{name} eid:{chunkMeta.eventId}";
         }
 
         public virtual void Load(ChunkMeta meta, BinaryReader br)
@@ -83,6 +87,38 @@ namespace Rdc
 
         public virtual void PostLoaded()
         {
+        }
+    }
+
+    public class Chunk_DriverInit : ChunkBase
+    {
+        public D3D11InitParams initParams;
+
+        public Chunk_DriverInit(ChunkManager chunkManager) : base(chunkManager) { }
+
+        public override void Load(ChunkMeta meta, BinaryReader br)
+        {
+            base.Load(meta, br);
+
+            initParams = D3D11Reader.Read_D3D11InitParams(br) as D3D11InitParams;
+        }
+
+        /// <summary>
+        /// 修改设备名
+        /// </summary>
+        /// <param name="bw"></param>
+        /// <param name="name"></param>
+        public void ModifyDeviceName(BinaryWriter bw, string name)
+        {
+            int maxLen = initParams.AdapterDesc.DescriptionLen;
+            if(name.Length > maxLen);
+            {
+                Console.WriteLine($"最大设备名称长度为 {maxLen}");
+            }
+
+            bw.BaseStream.Position = initParams.AdapterDesc.offset; // Description 为第一个字段
+            Utils.WriteChunkString(bw, name, maxLen);
+            initParams.AdapterDesc.Description = name;
         }
     }
 

@@ -80,6 +80,38 @@ public unsafe static class Utils
     }
 
     /// <summary>
+    /// 向流中写入chunk类型字符串
+    /// </summary>
+    /// <param name="bw"></param>
+    /// <param name="str"></param>
+    /// <param name="fixSize">固定大小，无论如何都将写入此长度的数据</param>
+    public static bool WriteChunkString(BinaryWriter bw, string str, int fixSize = 0)
+    {
+        byte[] buff;
+        if (fixSize == 0)
+            buff = Encoding.UTF8.GetBytes(str);
+        else
+        {
+            buff = new byte[fixSize];
+            int cnt = Encoding.UTF8.GetBytes(str, 0, str.Length, buff, 0);
+            if(cnt <= 0)
+            {
+                Console.WriteLine($"允许的最大字节数为 {fixSize}");
+                return false;
+            }
+
+            for(int i = cnt; i < fixSize; i++)
+            {
+                buff[i] = 0;
+            }
+        }
+
+        bw.Write(buff.Length);
+        bw.Write(buff, 0, buff.Length);
+        return true;
+    }
+
+    /// <summary>
     /// 从流中读取数据到 arr 中
     /// </summary>
     /// <typeparam name="T"></typeparam>
@@ -191,6 +223,17 @@ public unsafe static class Utils
         var ms = brs.BaseStream;
         long pos = ms.Position;
         pos = (pos + value - 1) & (~(value - 1));
+        ms.Position = pos;
+    }
+
+    public static void AlignUp(this BinaryWriter bw, int value)
+    {
+        var ms = bw.BaseStream as MemoryStream;
+        Debug.Assert(ms != null, "此方法仅支持MemoryStream");
+
+        long pos = ms.Position;
+        pos = (pos + value - 1) & (~(value - 1));
+        ms.Capacity = (int)Math.Max(ms.Capacity, pos + 1);
         ms.Position = pos;
     }
 

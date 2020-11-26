@@ -36,14 +36,18 @@ namespace RdcFileRepack
             if (mode == "dump")
             {
                 rdcFile.ExportTextures();
+				//rdcFile.ExportBuffers();
                 Console.WriteLine($"已导出所有贴图");
             }
             else if (mode == "repack") // 重新生成
             {
-				//rdcFile.SetDeviceName("NVIDIA GeForce GTX 8848 8GB");
-				rdcFile.LoadTexturesFromFile();
+                rdcFile.SetDeviceName("NVIDIA GeForce GTX 8848 8GB");
+                rdcFile.LoadTexturesFromFile();
+                //rdcFile.loadBuffersFromFile(); // 为了保险起见 相关的 draw 和 vertext buffer最好也移除
+                //rdcFile.RemoveChunkByEventId(10557, 10568);
 
-				string rdcPathNew = Path.GetFileNameWithoutExtension(rdcPath);
+
+                string rdcPathNew = Path.GetFileNameWithoutExtension(rdcPath);
 				rdcPathNew = $"{Path.GetDirectoryName(rdcPath)}/{rdcPathNew}_repack.rdc";
                 rdcFile.SaveToRdc(rdcPathNew);
 

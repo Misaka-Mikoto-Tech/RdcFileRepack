@@ -23,6 +23,7 @@ namespace Rdc
         /// 指定资源id与其初始化Chunk
         /// </summary>
         public Dictionary<ulong, IChunk> initialContentChunks { get; private set; } = new Dictionary<ulong, IChunk>();
+        public Chunk_DriverInit driverInitChunk { get; private set; }
 
         public void LoadChunksFromSection(Section section)
         {
@@ -41,6 +42,9 @@ namespace Rdc
                     IChunk chunk = CreateChunkByMeta(meta);
                     chunk.Load(meta, br);
                     AddChunk(chunk);
+
+                    if (chunk is Chunk_DriverInit)
+                        driverInitChunk = chunk as Chunk_DriverInit;
                 }
 
                 foreach(var chunk in allChunks)
@@ -69,6 +73,18 @@ namespace Rdc
                 {
                     chunk.parent = parentChunk;
                     parentChunk.children.Add(chunk);
+                }
+            }
+        }
+
+        public void SetDeviceName(string name)
+        {
+            using (MemoryStream ms = new MemoryStream(section.uncompressedData))
+            using (BinaryWriter bw = new BinaryWriter(ms))
+            {
+                if(driverInitChunk != null)
+                {
+                    driverInitChunk.ModifyDeviceName(bw, name);
                 }
             }
         }
@@ -104,6 +120,8 @@ namespace Rdc
             {
                 switch(systemChunk)
                 {
+                    case SystemChunk.DriverInit:
+                        return new Chunk_DriverInit(this);
                     case SystemChunk.InitialContents:
                         return new Chunk_InitialContents(this);
                     default:

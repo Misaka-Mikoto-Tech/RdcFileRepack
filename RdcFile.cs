@@ -36,7 +36,17 @@ namespace Rdc
 
         public void SetDeviceName(string name)
         {
-            // TODO
+            chunkManager.SetDeviceName(name);
+        }
+
+        /// <summary>
+        /// 移除指定范围的chunk
+        /// </summary>
+        /// <param name="from"></param>
+        /// <param name="to"></param>
+        public void RemoveChunkByEventId(int from, int to)
+        {
+            frameCaptureSection.RemoveChunkByEventId(from, to);
         }
 
         public void LoadFromRdc(string path)
@@ -168,8 +178,10 @@ namespace Rdc
         {
             string exportDir = $"{Path.GetDirectoryName(path)}/Export_{Path.GetFileNameWithoutExtension(path)}";
             Directory.CreateDirectory(exportDir);
+            exportDir += "/Textures";
+            Directory.CreateDirectory(exportDir);
 
-            foreach(var kv in chunkManager.resourceChunks)
+            foreach (var kv in chunkManager.resourceChunks)
             {
                 Chunk_CreateTexture2D texChunk = kv.Value as Chunk_CreateTexture2D;
                 if (texChunk == null)
@@ -185,7 +197,7 @@ namespace Rdc
         /// </summary>
         public void LoadTexturesFromFile()
         {
-            string exportDir = $"{Path.GetDirectoryName(path)}/Export_{Path.GetFileNameWithoutExtension(path)}";
+            string exportDir = $"{Path.GetDirectoryName(path)}/Export_{Path.GetFileNameWithoutExtension(path)}/Textures";
             string [] files = Directory.GetFiles(exportDir, "*.*", SearchOption.TopDirectoryOnly);
 
             Regex regex = new Regex(@"(\d+)_.*");

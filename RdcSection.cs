@@ -134,7 +134,10 @@ namespace Rdc
                     index++;
 
                     if (chunkMeta.chunkID == (int)SystemChunk.CaptureBegin)
+                    {
                         eventBeginIndex = chunkMeta.index;
+                        CaptureBeginChunkIndex = index - 1;
+                    }
 
                     chunkMetas.Add(chunkMeta);
                 }
@@ -176,8 +179,30 @@ namespace Rdc
             long offset = bw.BaseStream.Position;
 
             header.SetToUncompressFormat();
-            header.SaveToStream(bw);
-            bw.Write(uncompressedData, 0, uncompressedData.Length);
+
+            //生成临时数据，以跳过被remove的chunk
+            using(MemoryStream msTmp = new MemoryStream(uncompressedData.Length + 64))
+            using(BinaryWriter bwTmp = new BinaryWriter(msTmp))
+            {
+                foreach(var meta in chunkMetas)
+                {
+                    if (meta.isRemoved)
+                        continue;
+
+                    bwTmp.AlignUp(64);
+                    bwTmp.Write(uncompressedData, (int)meta.offset, (int)meta.fullLength);
+                    bwTmp.AlignUp(64);
+                }
+
+                header.sectionUncompressedLength = (ulong)msTmp.Length;
+                header.sectionCompressedLength = header.sectionUncompressedLength;
+
+                header.SaveToStream(bw);
+                bw.Write(msTmp.GetBuffer(), 0, (int)msTmp.Length);
+            }
+
+            //header.SaveToStream(bw);
+            //bw.Write(uncompressedData, 0, uncompressedData.Length);
 
             return (int)(bw.BaseStream.Position - offset);
         }
@@ -277,8 +302,53 @@ namespace Rdc
         /// <param name="to"></param>
         public void RemoveChunkByEventId(int from, int to)
         {
+            if(from < 0 || to < 0 || from < to)
+            {
+                Console.WriteLine("范围不合法");
+                return;
+            }
+
             from += CaptureBeginChunkIndex;
             to += CaptureBeginChunkIndex;
+
+            if(to > chunkMetas.Count)
+            {
+                Console.WriteLine("事件索引超出最大值");
+                return;
+            }
+
+            for(int i = from; i <= to; i++)
+            {
+                chunkMetas[i].isRemoved = true;
+            }
+        }
+
+        /// <summary>
+        /// 恢复指定范围的chunk
+        /// </summary>
+        /// <param name="from"></param>
+        /// <param name="to"></param>
+        public void RestoreChunkByEventId(int from, int to)
+        {
+            if (from < 0 || to < 0 || from < to)
+            {
+                Console.WriteLine("范围不合法");
+                return;
+            }
+
+            from += CaptureBeginChunkIndex;
+            to += CaptureBeginChunkIndex;
+
+            if (to > chunkMetas.Count)
+            {
+                Console.WriteLine("事件索引超出最大值");
+                return;
+            }
+
+            for (int i = from; i <= to; i++)
+            {
+                chunkMetas[i].isRemoved = false;
+            }
         }
 
         /// <summary>

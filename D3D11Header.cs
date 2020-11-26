@@ -4,10 +4,74 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+public static class D3D11
+{
+    public static uint D3D11_SDK_VERSION = 7;
+}
+
 public class D3D11_Content
 {
     public long offset;
     public long length;
+}
+
+public enum D3D_DRIVER_TYPE
+{
+    D3D_DRIVER_TYPE_UNKNOWN = 0,
+    D3D_DRIVER_TYPE_HARDWARE = (D3D_DRIVER_TYPE_UNKNOWN + 1),
+    D3D_DRIVER_TYPE_REFERENCE = (D3D_DRIVER_TYPE_HARDWARE + 1),
+    D3D_DRIVER_TYPE_NULL = (D3D_DRIVER_TYPE_REFERENCE + 1),
+    D3D_DRIVER_TYPE_SOFTWARE = (D3D_DRIVER_TYPE_NULL + 1),
+    D3D_DRIVER_TYPE_WARP = (D3D_DRIVER_TYPE_SOFTWARE + 1)
+}
+
+public enum D3D_FEATURE_LEVEL
+{
+    D3D_FEATURE_LEVEL_1_0_CORE = 0x1000,
+    D3D_FEATURE_LEVEL_9_1 = 0x9100,
+    D3D_FEATURE_LEVEL_9_2 = 0x9200,
+    D3D_FEATURE_LEVEL_9_3 = 0x9300,
+    D3D_FEATURE_LEVEL_10_0 = 0xa000,
+    D3D_FEATURE_LEVEL_10_1 = 0xa100,
+    D3D_FEATURE_LEVEL_11_0 = 0xb000,
+    D3D_FEATURE_LEVEL_11_1 = 0xb100,
+    D3D_FEATURE_LEVEL_12_0 = 0xc000,
+    D3D_FEATURE_LEVEL_12_1 = 0xc100
+}
+
+public struct LUID
+{
+    public uint LowPart;
+    public int HighPart;
+}
+
+public class DXGI_ADAPTER_DESC : D3D11_Content
+{
+    public int DescriptionLen; // 原始的长度
+
+    public string Description; // WCHAR[128], 文件中实际存储的是4字节长度变长字符串
+    public uint VendorId;
+    public uint DeviceId;
+    public uint SubSysId;
+    public uint Revision;
+    public ulong DedicatedVideoMemory;
+    public ulong DedicatedSystemMemory;
+    public ulong SharedSystemMemory;
+    public LUID AdapterLuid;
+}
+
+public class D3D11InitParams : D3D11_Content
+{
+    public D3D_DRIVER_TYPE DriverType = D3D_DRIVER_TYPE.D3D_DRIVER_TYPE_UNKNOWN;
+    public uint Flags = 0;
+    public uint SDKVersion = D3D11.D3D11_SDK_VERSION;
+    public uint NumFeatureLevels = 0;
+    public D3D_FEATURE_LEVEL[] FeatureLevels = new D3D_FEATURE_LEVEL[16];
+
+    public DXGI_ADAPTER_DESC AdapterDesc;
+
+    // check if a frame capture section version is supported
+    public const ulong CurrentVersion = 0x11;
 }
 
 public class D3D11_TEXTURE2D_DESC : D3D11_Content
