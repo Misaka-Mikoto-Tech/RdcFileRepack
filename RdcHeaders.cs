@@ -330,6 +330,8 @@ namespace Rdc
 
     public class ExtThumbnailHeader : ISerializable
     {
+        public const int headerSize = 2 + 2 + 4 + 4;
+
         public ushort width;
         public ushort height;
         public uint len;

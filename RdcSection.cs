@@ -37,7 +37,7 @@ namespace Rdc
 
         public byte[] diskData { get; private set; }
         public byte[] uncompressedData { get; private set; }
-        public byte[] thumbPixels { get; private set; }
+        public byte[] thumbPixels { get; set; }
 
         public void LoadFromJson(JsonData jsonData, StringBuilder sb)
         {
@@ -180,7 +180,7 @@ namespace Rdc
 
             header.SetToUncompressFormat();
 
-            if(chunkMetas != null)
+            if(chunkMetas != null) // framecapture section
             {
                 //生成临时数据，以跳过被remove的chunk
                 using (MemoryStream msTmp = new MemoryStream(uncompressedData.Length + 64))
@@ -202,6 +202,15 @@ namespace Rdc
                     header.SaveToStream(bw);
                     bw.Write(msTmp.GetBuffer(), 0, (int)msTmp.Position);
                 }
+            }
+            else if(thumbPixels != null) // thumbnail section
+            {
+                header.sectionCompressedLength = (ulong)(ExtThumbnailHeader.headerSize + thumbPixels.Length);
+                header.sectionCompressedLength = header.sectionUncompressedLength;
+
+                header.SaveToStream(bw);
+                thumbHeader.SaveToStream(bw);
+                bw.Write(thumbPixels, 0, thumbPixels.Length);
             }
             else
             {
@@ -356,14 +365,6 @@ namespace Rdc
             {
                 chunkMetas[i].isRemoved = false;
             }
-        }
-
-        /// <summary>
-        /// 重新构建数据(移除了Chunk后数据发生了变化)
-        /// </summary>
-        public void Rebuild()
-        {
-
         }
     }
 

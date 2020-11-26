@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FreeImageAPI;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -27,6 +28,18 @@ namespace Rdc
             get
             {
                 int idx = SectionIndex(SectionType.FrameCapture);
+                if (idx >= 0)
+                    return _sections[idx];
+
+                return null;
+            }
+        }
+
+        public Section thumbnailSection
+        {
+            get
+            {
+                int idx = SectionIndex(SectionType.ExtendedThumbnail);
                 if (idx >= 0)
                     return _sections[idx];
 
@@ -172,6 +185,50 @@ namespace Rdc
         }
 
         /// <summary>
+        /// 导出缩略图
+        /// </summary>
+        public void ExportThumbnail()
+        {
+            var thumbnailSection = this.thumbnailSection;
+            if (thumbnailSection != null)
+            {
+                string exportDir = $"{Path.GetDirectoryName(path)}/Export_{Path.GetFileNameWithoutExtension(path)}";
+                Directory.CreateDirectory(exportDir);
+
+                File.WriteAllBytes($"{exportDir}/thumbnail.png", thumbnailSection.thumbPixels);
+            }
+        }
+
+        /// <summary>
+        /// 载入缩略图
+        /// </summary>
+        public void LoadThumbnail()
+        {
+            var thumbnailSection = this.thumbnailSection;
+            if (thumbnailSection != null)
+            {
+                string thumbnailPath = $"{Path.GetDirectoryName(path)}/Export_{Path.GetFileNameWithoutExtension(path)}/thumbnail.png";
+                if (!File.Exists(thumbnailPath))
+                    return;
+
+                var dib = FreeImage.Load(FREE_IMAGE_FORMAT.FIF_PNG, thumbnailPath, FREE_IMAGE_LOAD_FLAGS.DEFAULT);
+                if(dib != null && !dib.IsNull)
+                {
+                    uint w = FreeImage.GetWidth(dib);
+                    uint h = FreeImage.GetHeight(dib);
+                    var thumbHeader = thumbnailSection.thumbHeader;
+                    if(w == thumbHeader.width && h == thumbHeader.height)
+                    {
+                        byte[] buff = File.ReadAllBytes(thumbnailPath);
+                        thumbnailSection.thumbPixels = buff;
+                        thumbHeader.len = (uint)buff.Length;
+                    }
+                    FreeImage.Unload(dib);
+                }
+            }
+        }
+
+        /// <summary>
         /// 导出所有支持的贴图
         /// </summary>
         public void ExportTextures()
@@ -183,12 +240,24 @@ namespace Rdc
 
             foreach (var kv in chunkManager.resourceChunks)
             {
-                Chunk_CreateTexture2D texChunk = kv.Value as Chunk_CreateTexture2D;
-                if (texChunk == null)
+                IChunk chunk = kv.Value;
+                if (chunk.name == null || chunk.resourceId == 0)
                     continue;
 
-                string path = $"{exportDir}/{texChunk.resourceId}_{texChunk.name}";
-                D3DTextureConvert.SaveTextureToFile(texChunk, path);
+                string path = $"{exportDir}/{chunk.resourceId}_{chunk.name}";
+
+                if (kv.Value is Chunk_CreateTexture2D)
+                {
+                    Chunk_CreateTexture2D texChunk = kv.Value as Chunk_CreateTexture2D;
+
+                    D3DTextureConvert.SaveTextureToFile(texChunk, path);
+                }
+                else if(kv.Value is Chunk_CreateSwapBuffer)
+                {
+                    Chunk_CreateSwapBuffer swapChunk = kv.Value as Chunk_CreateSwapBuffer;
+
+                    D3DTextureConvert.SaveTextureToFile(swapChunk, path);
+                }
             }
         }
 
@@ -211,11 +280,20 @@ namespace Rdc
                     continue;
 
                 int resourceId = int.Parse(match.Groups[1].Value);
-                Chunk_CreateTexture2D texChunk = chunkManager.GetResourceChunk((ulong)resourceId) as Chunk_CreateTexture2D;
-                if (texChunk == null)
-                    continue;
+                IChunk chunk = chunkManager.GetResourceChunk((ulong)resourceId);
 
-                D3DTextureConvert.LoadTextureDataFromFile(texChunk, path);
+                if(chunk is Chunk_CreateTexture2D)
+                {
+                    Chunk_CreateTexture2D texChunk = chunk as Chunk_CreateTexture2D;
+
+                    D3DTextureConvert.LoadTextureDataFromFile(texChunk, path);
+                }
+                else if (chunk is Chunk_CreateSwapBuffer)
+                {
+                    Chunk_CreateSwapBuffer swapChunk = chunk as Chunk_CreateSwapBuffer;
+
+                    D3DTextureConvert.LoadTextureDataFromFile(swapChunk, path);
+                }
             }
         }
     }

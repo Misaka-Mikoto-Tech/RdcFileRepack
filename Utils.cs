@@ -36,7 +36,7 @@ public unsafe static class Utils
         byte[] buff = new byte[len];
         br.Read(buff, 0, len);
 
-        string ret = Encoding.ASCII.GetString(buff, 0, len - 1); // rdc 文件存储的字符串都以 \0 结尾
+        string ret = Encoding.UTF8.GetString(buff, 0, len - 1); // rdc 文件存储的字符串都以 \0 结尾
         return ret;
     }
 
@@ -59,7 +59,7 @@ public unsafe static class Utils
                 throw new Exception($"invalid string size {lenSize}");
         }
 
-        byte[] buff = Encoding.ASCII.GetBytes(str);
+        byte[] buff = Encoding.UTF8.GetBytes(str);
         bw.Write(buff);
         bw.Write((byte)0); // zero endding
     }
@@ -75,7 +75,7 @@ public unsafe static class Utils
         byte[] buff = new byte[len];
         br.Read(buff, 0, len);
 
-        string ret = Encoding.ASCII.GetString(buff, 0, len);
+        string ret = Encoding.UTF8.GetString(buff, 0, len);
         return ret;
     }
 

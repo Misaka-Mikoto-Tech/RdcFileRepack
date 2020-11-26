@@ -36,21 +36,102 @@ namespace Rdc
                 return;
             }
 
-            var desc = texChunk.Descriptor;
+            SaveTextureToFile(subDatas, texChunk.Descriptor, texChunk.chunkManager.section, path);
+        }
+
+        /// <summary>
+        /// 将swapbuffer chunk数据保存到文件
+        /// </summary>
+        /// <param name="swapChunk"></param>
+        /// <param name="path"></param>
+        public static void SaveTextureToFile(Chunk_CreateSwapBuffer swapChunk, string path)
+        {
+            D3D11_SUBRESOURCE_DATA[] subDatas = null;
+            Chunk_InitialContents initialChunk = swapChunk.chunkManager.GetInitialContentsChunk(swapChunk.resourceId);
+            if (initialChunk != null)
+            {
+                subDatas = initialChunk.subDatas;
+            }
+
+            if (subDatas == null)
+                return;
+
+            SaveTextureToFile(subDatas, swapChunk.BackbufferDescriptor, swapChunk.chunkManager.section, path);
+        }
+
+        /// <summary>
+        /// 从图像文件加载贴图数据到Chunk, 要求图像尺寸与Chunk定义的完全一致
+        /// </summary>
+        /// <param name="texChunk"></param>
+        /// <param name="path"></param>
+        public static void LoadTextureDataFromFile(Chunk_CreateTexture2D texChunk, string path)
+        {
+            D3D11_SUBRESOURCE_DATA[] subDatas = texChunk.pInitialDatas;
+            if (subDatas == null)
+            {
+                Chunk_InitialContents initialChunk = texChunk.chunkManager.GetInitialContentsChunk(texChunk.resourceId);
+                if (initialChunk != null)
+                {
+                    subDatas = initialChunk.subDatas;
+                }
+            }
+
+            if (subDatas == null)
+            {
+                Console.WriteLine($"can not find Texture Data of {texChunk}");
+                return;
+            }
+
+            LoadTextureDataFromFile(subDatas, texChunk.Descriptor, texChunk.chunkManager.section, path);
+        }
+
+        /// <summary>
+        /// 从文件加载数据到swapchunk
+        /// </summary>
+        /// <param name="swapChunk"></param>
+        /// <param name="path"></param>
+        public static void LoadTextureDataFromFile(Chunk_CreateSwapBuffer swapChunk, string path)
+        {
+            D3D11_SUBRESOURCE_DATA[] subDatas = null;
+            if (subDatas == null)
+            {
+                Chunk_InitialContents initialChunk = swapChunk.chunkManager.GetInitialContentsChunk(swapChunk.resourceId);
+                if (initialChunk != null)
+                {
+                    subDatas = initialChunk.subDatas;
+                }
+            }
+
+            if (subDatas == null)
+            {
+                Console.WriteLine($"can not find Texture Data of {swapChunk}");
+                return;
+            }
+
+            LoadTextureDataFromFile(subDatas, swapChunk.BackbufferDescriptor, swapChunk.chunkManager.section, path);
+        }
+
+        /// <summary>
+        /// 保存贴图到文件，适用于 Chunk_CreateTexture2D 及 Chunk_CreateSwapBuffer
+        /// </summary>
+        /// <param name="subDatas"></param>
+        /// <param name="desc"></param>
+        /// <param name="section"></param>
+        public static void SaveTextureToFile(D3D11_SUBRESOURCE_DATA[] subDatas, D3D11_TEXTURE2D_DESC desc, Section section, string path)
+        {
             DXGI_FORMAT format = desc.Format;
             if (Common.IsBlockFormat(format)) // 暂时不支持导出压缩格式
                 return;
-
 
             if (format == DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_SNORM
                 || format == DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_TYPELESS
                 || format == DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM_SRGB) // 4通道保存成tga以方便编辑A通道
             {
                 FIBITMAP bmp = FreeImage.AllocateT(FREE_IMAGE_TYPE.FIT_BITMAP, (int)desc.Width, (int)desc.Height, 32);
-                
+
                 Debug.Assert(subDatas[0].sysMemLength >= desc.Width * desc.Height * 4); // sysMemLength 是对齐的，因此可能大于真实数据大小
 
-                fixed (void* p = &texChunk.chunkManager.section.uncompressedData[subDatas[0].sysMemDataOffset])
+                fixed (void* p = &section.uncompressedData[subDatas[0].sysMemDataOffset])
                 {
                     byte* rawData = (byte*)p;
                     for (int h = (int)(desc.Height - 1); h >= 0; h--) // bitmap 存储方向与 dx 相反
@@ -80,7 +161,7 @@ namespace Rdc
             {
                 FIBITMAP bmp = FreeImage.AllocateT(FREE_IMAGE_TYPE.FIT_BITMAP, (int)desc.Width, (int)desc.Height, 24);
                 Debug.Assert(subDatas[0].sysMemLength >= desc.Width * desc.Height);
-                fixed (void* p = &texChunk.chunkManager.section.uncompressedData[subDatas[0].sysMemDataOffset])
+                fixed (void* p = &section.uncompressedData[subDatas[0].sysMemDataOffset])
                 {
                     byte* rawData = (byte*)p;
                     for (int h = (int)(desc.Height - 1); h >= 0; h--) // bitmap 存储方向与 dx 相反
@@ -106,11 +187,13 @@ namespace Rdc
         }
 
         /// <summary>
-        /// 从图像文件加载贴图数据到Chunk, 要求图像尺寸与Chunk定义的完全一致
+        /// 从文件加载贴图数据
         /// </summary>
-        /// <param name="texChunk"></param>
+        /// <param name="subDatas"></param>
+        /// <param name="desc"></param>
+        /// <param name="section"></param>
         /// <param name="path"></param>
-        public static void LoadTextureDataFromFile(Chunk_CreateTexture2D texChunk, string path)
+        public static void LoadTextureDataFromFile(D3D11_SUBRESOURCE_DATA[] subDatas, D3D11_TEXTURE2D_DESC desc, Section section, string path)
         {
             FREE_IMAGE_FORMAT fiFormat = default;
 
@@ -135,33 +218,15 @@ namespace Rdc
 
             try
             {
-                D3D11_SUBRESOURCE_DATA[] subDatas = texChunk.pInitialDatas;
-                if (subDatas == null)
-                {
-                    Chunk_InitialContents initialChunk = texChunk.chunkManager.GetInitialContentsChunk(texChunk.resourceId);
-                    if (initialChunk != null)
-                    {
-                        subDatas = initialChunk.subDatas;
-                    }
-                }
-
-                if (subDatas == null)
-                {
-                    Console.WriteLine($"can not find Texture Data of {texChunk}");
-                    return;
-                }
-
-                var desc = texChunk.Descriptor;
                 DXGI_FORMAT format = desc.Format;
                 if (Common.IsBlockFormat(format)) // 暂时不支持压缩格式
                     return;
-
 
                 uint fiBpp = FreeImage.GetBPP(bmp) / 8;
                 uint width = FreeImage.GetWidth(bmp);
                 uint height = FreeImage.GetHeight(bmp);
 
-                if(width != desc.Width || height != desc.Height)
+                if (width != desc.Width || height != desc.Height)
                 {
                     Console.WriteLine($"size unmatch of file {path}, should be {desc.Width}*{desc.Height}");
                     return;
@@ -171,7 +236,25 @@ namespace Rdc
                     || format == DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_TYPELESS
                     || format == DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM_SRGB) // 4通道保存成tga以方便编辑A通道
                 {
+                    Debug.Assert(subDatas[0].sysMemLength >= desc.Width * desc.Height);
 
+                    fixed (void* p = &section.uncompressedData[subDatas[0].sysMemDataOffset])
+                    {
+                        byte* rawData = (byte*)p;
+                        for (int h = (int)(desc.Height - 1); h >= 0; h--) // bitmap 存储方向与 dx 相反
+                        {
+                            byte* scanLine = (byte*)FreeImage.GetScanLine(bmp, h);
+                            for (int w = 0; w < desc.Width; w++)
+                            {
+                                rawData[w * 4] = *scanLine++;
+                                rawData[w * 4 + 1] = *scanLine++;
+                                rawData[w * 4 + 2] = *scanLine++;
+                                rawData[w * 4 + 3] = *scanLine++;
+                            }
+
+                            rawData += subDatas[0].SysMemPitch;
+                        }
+                    }
                 }
                 else if (format == DXGI_FORMAT.DXGI_FORMAT_R8_SNORM
                     || format == DXGI_FORMAT.DXGI_FORMAT_R8_TYPELESS
@@ -180,7 +263,7 @@ namespace Rdc
                 {
                     Debug.Assert(subDatas[0].sysMemLength >= desc.Width * desc.Height);
 
-                    fixed (void* p = &texChunk.chunkManager.section.uncompressedData[subDatas[0].sysMemDataOffset])
+                    fixed (void* p = &section.uncompressedData[subDatas[0].sysMemDataOffset])
                     {
                         byte* rawData = (byte*)p;
                         for (int h = (int)(desc.Height - 1); h >= 0; h--) // bitmap 存储方向与 dx 相反
