@@ -198,6 +198,9 @@ namespace Rdc
         public void LoadTexturesFromFile()
         {
             string exportDir = $"{Path.GetDirectoryName(path)}/Export_{Path.GetFileNameWithoutExtension(path)}/Textures";
+            if (!Directory.Exists(exportDir))
+                return;
+
             string [] files = Directory.GetFiles(exportDir, "*.*", SearchOption.TopDirectoryOnly);
 
             Regex regex = new Regex(@"(\d+)_.*");

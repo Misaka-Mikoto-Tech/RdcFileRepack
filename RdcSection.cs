@@ -180,29 +180,34 @@ namespace Rdc
 
             header.SetToUncompressFormat();
 
-            //生成临时数据，以跳过被remove的chunk
-            using(MemoryStream msTmp = new MemoryStream(uncompressedData.Length + 64))
-            using(BinaryWriter bwTmp = new BinaryWriter(msTmp))
+            if(chunkMetas != null)
             {
-                foreach(var meta in chunkMetas)
+                //生成临时数据，以跳过被remove的chunk
+                using (MemoryStream msTmp = new MemoryStream(uncompressedData.Length + 64))
+                using (BinaryWriter bwTmp = new BinaryWriter(msTmp))
                 {
-                    if (meta.isRemoved)
-                        continue;
+                    foreach (var meta in chunkMetas)
+                    {
+                        if (meta.isRemoved)
+                            continue;
 
-                    bwTmp.AlignUp(64);
-                    bwTmp.Write(uncompressedData, (int)meta.offset, (int)meta.fullLength);
-                    bwTmp.AlignUp(64);
+                        bwTmp.AlignUp(64);
+                        bwTmp.Write(uncompressedData, (int)meta.offset, (int)meta.fullLength);
+                        bwTmp.AlignUp(64);
+                    }
+
+                    header.sectionUncompressedLength = (ulong)msTmp.Position; // Position 有可能比 Length 大。。。。
+                    header.sectionCompressedLength = header.sectionUncompressedLength;
+
+                    header.SaveToStream(bw);
+                    bw.Write(msTmp.GetBuffer(), 0, (int)msTmp.Position);
                 }
-
-                header.sectionUncompressedLength = (ulong)msTmp.Length;
-                header.sectionCompressedLength = header.sectionUncompressedLength;
-
-                header.SaveToStream(bw);
-                bw.Write(msTmp.GetBuffer(), 0, (int)msTmp.Length);
             }
-
-            //header.SaveToStream(bw);
-            //bw.Write(uncompressedData, 0, uncompressedData.Length);
+            else
+            {
+                header.SaveToStream(bw);
+                bw.Write(uncompressedData, 0, uncompressedData.Length);
+            }
 
             return (int)(bw.BaseStream.Position - offset);
         }
@@ -302,7 +307,7 @@ namespace Rdc
         /// <param name="to"></param>
         public void RemoveChunkByEventId(int from, int to)
         {
-            if(from < 0 || to < 0 || from < to)
+            if(from < 0 || to < 0 || from > to)
             {
                 Console.WriteLine("范围不合法");
                 return;
@@ -321,6 +326,8 @@ namespace Rdc
             {
                 chunkMetas[i].isRemoved = true;
             }
+
+            Console.WriteLine($"已移除chunk [{from} - {to}]");
         }
 
         /// <summary>

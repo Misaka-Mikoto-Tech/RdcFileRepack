@@ -111,9 +111,10 @@ namespace Rdc
         public void ModifyDeviceName(BinaryWriter bw, string name)
         {
             int maxLen = initParams.AdapterDesc.DescriptionLen;
-            if(name.Length > maxLen);
+            if(name.Length > maxLen)
             {
                 Console.WriteLine($"最大设备名称长度为 {maxLen}");
+                return;
             }
 
             bw.BaseStream.Position = initParams.AdapterDesc.offset; // Description 为第一个字段
