@@ -90,6 +90,23 @@ namespace Rdc
         }
     }
 
+    /// <summary>
+    /// 所有eventId大于0的都需要继承自此类
+    /// </summary>
+    public class Chunk_Event : ChunkBase
+    {
+        public ulong m_CurContextId;
+
+        public Chunk_Event(ChunkManager chunkManager) : base(chunkManager) { }
+
+        public override void Load(ChunkMeta meta, BinaryReader br)
+        {
+            base.Load(meta, br);
+
+            m_CurContextId = br.ReadUInt64();
+        }
+    }
+
     public class Chunk_DriverInit : ChunkBase
     {
         public D3D11InitParams initParams;
@@ -412,13 +429,50 @@ namespace Rdc
         public Chunk_UpdateSubresource1(ChunkManager chunkManager) : base(chunkManager) { }
     }
 
-    //public class Chunk_SetVertexBuffer : ChunkBase
-    //{
+    #region EventChunk
+    public class Chunk_IASetVertexBuffers : Chunk_Event
+    {
+        public uint StartSlot;
+        public uint NumBuffers;
+        public ulong[] ppVertexBuffers; // parentIds
+        public uint[] pStrides;
+        public uint[] pOffsets;
 
-    //}
 
-    //public class Chunk_SetIndexBuffer : ChunkBase
-    //{
+        public Chunk_IASetVertexBuffers(ChunkManager chunkManager) : base(chunkManager) { }
 
-    //}
+        public override void Load(ChunkMeta meta, BinaryReader br)
+        {
+            base.Load(meta, br);
+
+            StartSlot = br.ReadUInt32();
+            NumBuffers = br.ReadUInt32();
+            ppVertexBuffers = D3D11Reader.Read_Primitive_Array<ulong>(br);
+            pStrides = D3D11Reader.Read_Primitive_Array<uint>(br);
+            pOffsets = D3D11Reader.Read_Primitive_Array<uint>(br);
+
+            if(NumBuffers > 0)
+            {
+                parentId = ppVertexBuffers[0]; // 没办法，只显示第一个吧
+            }
+        }
+    }
+
+    public class Chunk_IASetIndexBuffer : Chunk_Event
+    {
+        public DXGI_FORMAT Format;
+        public uint Offset;
+
+        public Chunk_IASetIndexBuffer(ChunkManager chunkManager) : base(chunkManager) { }
+
+        public override void Load(ChunkMeta meta, BinaryReader br)
+        {
+            base.Load(meta, br);
+
+            parentId = br.ReadUInt64(); // pIndexBuffer
+            Format = (DXGI_FORMAT)br.ReadInt32();
+            Offset = br.ReadUInt32();
+        }
+    }
+    #endregion
 }

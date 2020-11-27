@@ -23,6 +23,10 @@ namespace Rdc
     {
         public int index { get; private set; }
         public int eventId { get; private set; }
+        public long dataOffset
+        {
+            get { return offset + headerLength; }
+        }
 
         public bool isRemoved;
 

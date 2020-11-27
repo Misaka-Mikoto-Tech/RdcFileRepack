@@ -152,6 +152,10 @@ namespace Rdc
                         return new Chunk_UpdateSubresource1(this);
                     case D3D11Chunk.CreateBuffer:
                         return new Chunk_CreateBuffer(this);
+                    case D3D11Chunk.IASetVertexBuffers:
+                        return new Chunk_IASetVertexBuffers(this);
+                    case D3D11Chunk.IASetIndexBuffer:
+                        return new Chunk_IASetIndexBuffer(this);
                     default:
                         return new ChunkBase(this);
                 }
@@ -161,22 +165,50 @@ namespace Rdc
         public string DumpChunkInfos()
         {
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine($"{"索引",-4} {"EventId",-8}  {"Chunk类型",-28}  {"枚举值",-4}  {"Section偏移",-15}  {"Chunk长度",-11} {"资源id", -6} {"资源名"} ");
+            sb.AppendLine($"{"索引",-4} {"EventId",-8}  {"Chunk类型",-28}  {"枚举值",-4}  {"Section偏移",-15}  {"Chunk长度",-11} {"资源id", -10} {"资源名"} ");
             for (int i = 0, imax = allChunks.Count; i < imax; i++)
             {
                 var chunk = allChunks[i];
                 var meta = chunk.chunkMeta;
 
-                ulong resId = chunk.resourceId;
-                if (resId == 0 && chunk.parent != null)
-                    resId = chunk.parent.resourceId;
+                
 
-                string chunkName = chunk.name;
-                if (string.IsNullOrEmpty(chunkName) && chunk.parent != null)
-                    chunkName = chunk.parent.name;
+                string chunkName = "";
+                string resIdStr = "";
 
-                string resIdStr = resId == 0 ? "" : $"{resId}";
-                sb.AppendLine($"{chunk.index,-6} {chunk.eventId,-8}  {meta,-30}  {meta.chunkID,-6}  offset:{meta.offset,-10}  len:{meta.fullLength,-8} {resIdStr, -8} {chunkName}");
+                // IASetVertexBuffers 有多个 resources, 因此特殊处理
+                if (meta.chunkType == D3D11Chunk.IASetVertexBuffers)
+                {
+                    Chunk_IASetVertexBuffers vertChunk = chunk as Chunk_IASetVertexBuffers;
+                    foreach (ulong resId in vertChunk.ppVertexBuffers)
+                    {
+                        IChunk resChunk = GetResourceChunk(resId);
+
+                        resIdStr += "," + resId.ToString();
+                        
+                        if(resChunk != null)
+                        {
+                            chunkName += ", " + resChunk.name;
+                        }
+                    }
+
+                    resIdStr = resIdStr.Substring(1);
+                    chunkName = chunkName.Substring(2);
+                }
+                else
+                {
+                    ulong resId = chunk.resourceId;
+                    if (resId == 0 && chunk.parent != null)
+                        resId = chunk.parent.resourceId;
+
+                    chunkName = chunk.name;
+                    if (string.IsNullOrEmpty(chunkName) && chunk.parent != null)
+                        chunkName = chunk.parent.name;
+
+                    resIdStr = resId == 0 ? "" : $"{resId}";
+                }
+                
+                sb.AppendLine($"{chunk.index,-6} {chunk.eventId,-8}  {meta,-30}  {meta.chunkID,-6}  offset:{meta.offset,-10}  len:{meta.fullLength,-8} {resIdStr, -12} {chunkName}");
             }
 
             return sb.ToString();
