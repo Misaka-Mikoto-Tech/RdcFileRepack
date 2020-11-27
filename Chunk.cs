@@ -155,24 +155,6 @@ namespace Rdc
                 }
             }
         }
-
-        /// <summary>
-        /// 保存成图片, 格式自动判断, 存在多级mip时只保存一张，原因是需要保存并修改的大部分都是运行时生成的贴图，这类贴图都没有mipmap
-        /// </summary>
-        /// <param name="path"></param>
-        public void SaveToImage(string path)
-        {
-
-        }
-
-        /// <summary>
-        /// 从图片载入数据
-        /// </summary>
-        /// <param name="path"></param>
-        public void LoadDataFromImage(string path)
-        {
-
-        }
     }
 
     /// <summary>
@@ -291,8 +273,9 @@ namespace Rdc
 
     public class Chunk_CreateBuffer : ChunkBase
     {
-        public D3D11_BUFFER_DESC pDesc;
-        public D3D11_SUBRESOURCE_DATA[] pInitialDatas;
+        public D3D11_BUFFER_DESC Descriptor;
+        public D3D11_SUBRESOURCE_DATA pInitialData;
+        public D3D11_SUBRESOURCE_DATA data;
 
         public Chunk_CreateBuffer(ChunkManager chunkManager) : base(chunkManager) { }
 
@@ -300,11 +283,22 @@ namespace Rdc
         {
             base.Load(meta, br);
 
-            pDesc = D3D11Reader.Read_D3D11_BUFFER_DESC(br) as D3D11_BUFFER_DESC;
-            pInitialDatas = D3D11Reader.Read_D3D11_Nullable_Array<D3D11_SUBRESOURCE_DATA>(br);
-            resourceId = br.ReadUInt64();
+            Descriptor = D3D11Reader.Read_D3D11_BUFFER_DESC(br) as D3D11_BUFFER_DESC; // Descriptor
+            pInitialData = D3D11Reader.Read_D3D11_Nullable<D3D11_SUBRESOURCE_DATA>(br); // pInitialData
+            resourceId = br.ReadUInt64(); // pBuffer
 
-            // TODO buffer 先不管了，目前没有导出的需求
+            int dataOffset;
+            int count;
+            D3D11Reader.Read_BytesArray(br, out dataOffset, out count, true);
+            ulong InitialDataLength = br.ReadUInt64();
+            Debug.Assert((int)InitialDataLength == count);
+
+            data = new D3D11_SUBRESOURCE_DATA();
+            data.pSysMem = null;
+            data.SysMemPitch = Descriptor.ByteWidth;
+            data.SysMemSlicePitch = Descriptor.ByteWidth;
+            data.sysMemDataOffset = dataOffset;
+            data.sysMemLength = count;
         }
     }
 
@@ -417,4 +411,14 @@ namespace Rdc
     {
         public Chunk_UpdateSubresource1(ChunkManager chunkManager) : base(chunkManager) { }
     }
+
+    //public class Chunk_SetVertexBuffer : ChunkBase
+    //{
+
+    //}
+
+    //public class Chunk_SetIndexBuffer : ChunkBase
+    //{
+
+    //}
 }

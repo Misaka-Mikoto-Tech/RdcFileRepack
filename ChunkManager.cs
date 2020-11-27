@@ -161,7 +161,7 @@ namespace Rdc
         public string DumpChunkInfos()
         {
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine($"{"索引",-4} {"EventId",-8}  {"Chunk类型",-28}  {"枚举值",-4}  {"Section偏移",-15}  {"Chunk长度",-11} {"资源id", -6} {"资源名"} ".Trim());
+            sb.AppendLine($"{"索引",-4} {"EventId",-8}  {"Chunk类型",-28}  {"枚举值",-4}  {"Section偏移",-15}  {"Chunk长度",-11} {"资源id", -6} {"资源名"} ");
             for (int i = 0, imax = allChunks.Count; i < imax; i++)
             {
                 var chunk = allChunks[i];
@@ -171,13 +171,12 @@ namespace Rdc
                 if (resId == 0 && chunk.parent != null)
                     resId = chunk.parent.resourceId;
 
-
                 string chunkName = chunk.name;
                 if (string.IsNullOrEmpty(chunkName) && chunk.parent != null)
                     chunkName = chunk.parent.name;
 
                 string resIdStr = resId == 0 ? "" : $"{resId}";
-                sb.AppendLine($"{chunk.index,-6} {chunk.eventId,-8}  {meta,-30}  {meta.chunkID,-6}  offset:{meta.offset,-10}  len:{meta.fullLength,-8} {resIdStr, -8} {chunkName}".Trim());
+                sb.AppendLine($"{chunk.index,-6} {chunk.eventId,-8}  {meta,-30}  {meta.chunkID,-6}  offset:{meta.offset,-10}  len:{meta.fullLength,-8} {resIdStr, -8} {chunkName}");
             }
 
             return sb.ToString();
