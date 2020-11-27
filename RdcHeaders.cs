@@ -15,8 +15,6 @@ namespace Rdc
     {
         int LoadFromStream(BinaryReader br);
         int SaveToStream(BinaryWriter bw);
-        void LoadFromJson(JsonData jsonData, StringBuilder sb);
-        void SaveToJson(StringBuilder sb, JsonData jsonData);
     }
 
     public unsafe class FileHeader : ISerializable
@@ -43,11 +41,6 @@ namespace Rdc
             return true;
         }
 
-        public void LoadFromJson(JsonData jsonData, StringBuilder sb)
-        {
-            throw new NotImplementedException();
-        }
-
         public int LoadFromStream(BinaryReader br)
         {
             long offset = br.BaseStream.Position;
@@ -60,11 +53,6 @@ namespace Rdc
             br.Read(progVersion, 0, VERSION_LENGTH);
 
             return (int)(br.BaseStream.Position - offset);
-        }
-
-        public void SaveToJson(StringBuilder sb, JsonData jsonData)
-        {
-            throw new NotImplementedException();
         }
 
         public int SaveToStream(BinaryWriter bw)
@@ -80,6 +68,9 @@ namespace Rdc
         }
     }
 
+    /// <summary>
+    /// 二进制缩略图，这是个jpg文件
+    /// </summary>
     public class BinaryThumbnail : ISerializable
     {
         public const int MAX_THUMBNAIL_SIZE = 10 * 1024 * 1024;
@@ -88,11 +79,6 @@ namespace Rdc
         public ushort height;
         //public uint length;
         public byte[] data;
-
-        public void LoadFromJson(JsonData jsonData, StringBuilder sb)
-        {
-            throw new NotImplementedException();
-        }
 
         public int LoadFromStream(BinaryReader br)
         {
@@ -108,11 +94,6 @@ namespace Rdc
             br.Read(data, 0, data.Length);
 
             return (int)(br.BaseStream.Position - offset);
-        }
-
-        public void SaveToJson(StringBuilder sb, JsonData jsonData)
-        {
-            throw new NotImplementedException();
         }
 
         public int SaveToStream(BinaryWriter bw)
@@ -135,11 +116,6 @@ namespace Rdc
         //public byte driverNameLength;
         public string driverName;
 
-        public void LoadFromJson(JsonData jsonData, StringBuilder sb)
-        {
-            throw new NotImplementedException();
-        }
-
         public int LoadFromStream(BinaryReader br)
         {
             long offset = br.BaseStream.Position;
@@ -149,11 +125,6 @@ namespace Rdc
             driverName = Utils.GetStringFromStream<byte>(br);
 
             return (int)(br.BaseStream.Position - offset);
-        }
-
-        public void SaveToJson(StringBuilder sb, JsonData jsonData)
-        {
-            throw new NotImplementedException();
         }
 
         public int SaveToStream(BinaryWriter bw)
@@ -180,11 +151,6 @@ namespace Rdc
         //public uint sectionNameLength;
         public string name;
 
-        public void LoadFromJson(JsonData jsonData, StringBuilder sb)
-        {
-            throw new NotImplementedException();
-        }
-
         public int LoadFromStream(BinaryReader br)
         {
             long offset = br.BaseStream.Position;
@@ -208,11 +174,6 @@ namespace Rdc
             //br.ReadByte(); // SkipBytes(1), renderdoc 读取 name 少读了一个字节，然后又 skip 了一个字节，因此等于直接读name
 
             return (int)(br.BaseStream.Position - offset);
-        }
-
-        public void SaveToJson(StringBuilder sb, JsonData jsonData)
-        {
-            throw new NotImplementedException();
         }
 
         public int SaveToStream(BinaryWriter bw)
@@ -251,17 +212,7 @@ namespace Rdc
         public ulong uncompressedSize;
         public ulong compressedSize;
 
-        public void LoadFromJson(JsonData jsonData, StringBuilder sb)
-        {
-            throw new NotImplementedException();
-        }
-
         public int LoadFromStream(BinaryReader br)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void SaveToJson(StringBuilder sb, JsonData jsonData)
         {
             throw new NotImplementedException();
         }
@@ -278,17 +229,7 @@ namespace Rdc
         public ulong dataOffset;
         public ulong diskLength;
 
-        public void LoadFromJson(JsonData jsonData, StringBuilder sb)
-        {
-            throw new NotImplementedException();
-        }
-
         public int LoadFromStream(BinaryReader br)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void SaveToJson(StringBuilder sb, JsonData jsonData)
         {
             throw new NotImplementedException();
         }
@@ -307,17 +248,7 @@ namespace Rdc
         public ushort height;
         public FileType format;
 
-        public void LoadFromJson(JsonData jsonData, StringBuilder sb)
-        {
-            throw new NotImplementedException();
-        }
-
         public int LoadFromStream(BinaryReader br)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void SaveToJson(StringBuilder sb, JsonData jsonData)
         {
             throw new NotImplementedException();
         }
@@ -337,11 +268,6 @@ namespace Rdc
         public uint len;
         public FileType format;
 
-        public void LoadFromJson(JsonData jsonData, StringBuilder sb)
-        {
-            throw new NotImplementedException();
-        }
-
         public int LoadFromStream(BinaryReader br)
         {
             long offset = br.BaseStream.Position;
@@ -352,11 +278,6 @@ namespace Rdc
             format = (FileType)br.ReadUInt32();
 
             return (int)(br.BaseStream.Position - offset);
-        }
-
-        public void SaveToJson(StringBuilder sb, JsonData jsonData)
-        {
-            throw new NotImplementedException();
         }
 
         public int SaveToStream(BinaryWriter bw)

@@ -19,7 +19,7 @@ namespace Rdc
         public ChunkManager chunkManager { get; private set; }
 
         private FileHeader _fileHeader;
-        private BinaryThumbnail _thumb;
+        private BinaryThumbnail _binaryThumbnail;
         private CaptureMetaData _meta;
         private List<Section> _sections;
 
@@ -87,8 +87,8 @@ namespace Rdc
                 if (!_fileHeader.IsValid())
                     return;
 
-                _thumb = new BinaryThumbnail();
-                _thumb.LoadFromStream(br);
+                _binaryThumbnail = new BinaryThumbnail();
+                _binaryThumbnail.LoadFromStream(br);
 
                 _meta = new CaptureMetaData();
                 _meta.LoadFromStream(br);
@@ -145,7 +145,7 @@ namespace Rdc
             try
             {
                 _fileHeader.SaveToStream(bw);
-                _thumb.SaveToStream(bw);
+                _binaryThumbnail.SaveToStream(bw);
                 _meta.SaveToStream(bw);
 
                 {// write padding
@@ -189,13 +189,16 @@ namespace Rdc
         /// </summary>
         public void ExportThumbnail()
         {
+            // rdc 内有两个缩略图，一个是紧邻FileHeader的BinaryThumbnail，一个是独立的Section
+            string exportDir = $"{Path.GetDirectoryName(path)}/Export_{Path.GetFileNameWithoutExtension(path)}";
+            Directory.CreateDirectory(exportDir);
+
+            File.WriteAllBytes($"{exportDir}/BinaryThumbnail.jpg", _binaryThumbnail.data);
+
             var thumbnailSection = this.thumbnailSection;
             if (thumbnailSection != null)
             {
-                string exportDir = $"{Path.GetDirectoryName(path)}/Export_{Path.GetFileNameWithoutExtension(path)}";
-                Directory.CreateDirectory(exportDir);
-
-                File.WriteAllBytes($"{exportDir}/thumbnail.png", thumbnailSection.thumbPixels);
+                File.WriteAllBytes($"{exportDir}/ExtThumbnail.png", thumbnailSection.thumbPixels);
             }
         }
 
@@ -204,14 +207,25 @@ namespace Rdc
         /// </summary>
         public void LoadThumbnail()
         {
+            string exportDir = $"{Path.GetDirectoryName(path)}/Export_{Path.GetFileNameWithoutExtension(path)}";
+            string binaryThumbnailPath = $"{exportDir}/BinaryThumbnail.jpg";
+            if (File.Exists(binaryThumbnailPath))
+            {
+                _binaryThumbnail.data = File.ReadAllBytes(binaryThumbnailPath);
+            }
+            else
+            {
+                Console.WriteLine($"没有找到文件 {binaryThumbnailPath}");
+            }
+
             var thumbnailSection = this.thumbnailSection;
             if (thumbnailSection != null)
             {
-                string thumbnailPath = $"{Path.GetDirectoryName(path)}/Export_{Path.GetFileNameWithoutExtension(path)}/thumbnail.png";
-                if (!File.Exists(thumbnailPath))
+                string extThumbnailPath = $"{exportDir}/ExtThumbnail.png";
+                if (!File.Exists(extThumbnailPath))
                     return;
 
-                var dib = FreeImage.Load(FREE_IMAGE_FORMAT.FIF_PNG, thumbnailPath, FREE_IMAGE_LOAD_FLAGS.DEFAULT);
+                var dib = FreeImage.Load(FREE_IMAGE_FORMAT.FIF_PNG, extThumbnailPath, FREE_IMAGE_LOAD_FLAGS.DEFAULT);
                 if(dib != null && !dib.IsNull)
                 {
                     uint w = FreeImage.GetWidth(dib);
@@ -219,7 +233,7 @@ namespace Rdc
                     var thumbHeader = thumbnailSection.thumbHeader;
                     if(w == thumbHeader.width && h == thumbHeader.height)
                     {
-                        byte[] buff = File.ReadAllBytes(thumbnailPath);
+                        byte[] buff = File.ReadAllBytes(extThumbnailPath);
                         thumbnailSection.thumbPixels = buff;
                         thumbHeader.len = (uint)buff.Length;
                     }
