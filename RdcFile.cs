@@ -310,6 +310,20 @@ namespace Rdc
                 }
             }
         }
+
+        public void DumpChunks()
+        {
+            string infos = chunkManager.DumpChunkInfos();
+            string chunkFilePath = $"{Path.GetDirectoryName(path)}/Export_{Path.GetFileNameWithoutExtension(path)}/ChunkInfos.txt";
+            File.WriteAllText(chunkFilePath, infos);
+        }
+
+        public void DumpAll()
+        {
+            ExportThumbnail();
+            ExportTextures();
+            DumpChunks();
+        }
     }
 
 }

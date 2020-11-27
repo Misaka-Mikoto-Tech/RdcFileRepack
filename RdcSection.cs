@@ -99,12 +99,6 @@ namespace Rdc
                 File.WriteAllBytes($"D:/{props.name.Replace('/', '_')}_lz4.bin", diskData);
                 File.WriteAllBytes($"D:/{props.name.Replace('/', '_')}_raw.bin", uncompressedData);
             }
-
-            if(chunkMetas != null)
-            {
-                string chunkInfos = DumpChunkInfos();
-                File.WriteAllText("D:/chunkMetas.txt", chunkInfos);
-            }
 #endif
 
             return (int)(br.BaseStream.Position - offset);
@@ -288,25 +282,6 @@ namespace Rdc
         public void CompressData(SectionFlags flags)
         {
 
-        }
-
-        /// <summary>
-        /// 获取Chunks信息
-        /// </summary>
-        /// <returns></returns>
-        public string DumpChunkInfos()
-        {
-            if (chunkMetas == null)
-                return string.Empty;
-
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0, imax = chunkMetas.Count; i < imax; i++)
-            {
-                var chunk = chunkMetas[i];
-                sb.AppendLine($"{chunk.index,-4} {chunk.eventId, -4}  {chunk, -30}  {chunk.chunkID, -4}  offset:{chunk.offset,-8}  len:{chunk.fullLength,-8}".Trim());
-            }
-
-            return sb.ToString();
         }
 
         /// <summary>

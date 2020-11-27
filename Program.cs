@@ -35,8 +35,8 @@ namespace RdcFileRepack
 
             if (mode == "dump")
             {
-                rdcFile.ExportThumbnail();
-                rdcFile.ExportTextures();
+                rdcFile.DumpAll();
+
 				//rdcFile.ExportBuffers();
                 Console.WriteLine($"已导出所有贴图, repack前请务必修改缩略图和SwapBuffer图像");
             }
