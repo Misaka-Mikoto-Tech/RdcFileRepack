@@ -308,7 +308,7 @@ namespace Rdc
 
             for(int i = from; i <= to; i++)
             {
-                chunkMetas[i].isRemoved = true;
+                chunkMetas[i - 1].isRemoved = true;
             }
 
             Console.WriteLine($"已移除chunk [{from} - {to}]");
@@ -338,7 +338,7 @@ namespace Rdc
 
             for (int i = from; i <= to; i++)
             {
-                chunkMetas[i].isRemoved = false;
+                chunkMetas[i - 1].isRemoved = false;
             }
         }
     }

@@ -99,6 +99,7 @@
     <Compile Include="RdcHeaders.cs" />
     <Compile Include="RdcSection.cs" />
     <Compile Include="Singleton.cs" />
+    <Compile Include="UIDBufferModifier.cs" />
     <Compile Include="Utils.cs" />
   </ItemGroup>
   <ItemGroup>

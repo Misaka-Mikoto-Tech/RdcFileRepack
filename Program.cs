@@ -45,8 +45,9 @@ namespace RdcFileRepack
                 rdcFile.SetDeviceName("NVIDIA GeForce GTX 8848 8GB");
 				rdcFile.LoadThumbnail();
                 rdcFile.LoadTexturesFromFile();
-                //rdcFile.loadBuffersFromFile(); // 为了保险起见 相关的 draw 和 vertext buffer最好也移除
-                rdcFile.RemoveChunkByEventId(10557, 10568);
+				//rdcFile.loadBuffersFromFile(); // 为了保险起见 相关的 draw 和 vertext buffer最好也移除
+				//rdcFile.RemoveChunkByEventId(10557, 10568);
+				rdcFile.ModifyUidBufferByEventid(10559, 0, 8f);
 
 
                 string rdcPathNew = Path.GetFileNameWithoutExtension(rdcPath);

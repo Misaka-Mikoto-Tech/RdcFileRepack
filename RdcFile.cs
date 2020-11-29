@@ -62,6 +62,17 @@ namespace Rdc
             frameCaptureSection.RemoveChunkByEventId(from, to);
         }
 
+        /// <summary>
+        /// 修改UID drawcall使用的顶点缓冲区, 并使用指定索引的数字填充
+        /// </summary>
+        /// <param name="resourceId"></param>
+        /// <param name="fillWithNumIndex"></param>
+        /// <param name="characterWidth">字符宽度</param>
+        public void ModifyUidBufferByEventid(int eventId, int fillWithNumIndex, float characterWidth = 8f)
+        {
+            UIDBufferModifier.Modify(frameCaptureSection.chunkManager, eventId, fillWithNumIndex, characterWidth);
+        }
+
         public void LoadFromRdc(string path)
         {
             Console.WriteLine($"正在打开文件 {path}");
@@ -311,6 +322,14 @@ namespace Rdc
             }
         }
 
+        /// <summary>
+        /// 导出所有的buffer，注意只能导出此buffer初始数据，数据在多个drawcall中可能被 Unmap 指令修改
+        /// </summary>
+        public void ExportBuffers()
+        {
+
+        }
+
         public void DumpChunks()
         {
             string infos = chunkManager.DumpChunkInfos();
@@ -322,6 +341,7 @@ namespace Rdc
         {
             ExportThumbnail();
             ExportTextures();
+            ExportBuffers();
             DumpChunks();
         }
     }

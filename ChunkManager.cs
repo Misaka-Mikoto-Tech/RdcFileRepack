@@ -24,6 +24,7 @@ namespace Rdc
         /// </summary>
         public Dictionary<ulong, IChunk> initialContentChunks { get; private set; } = new Dictionary<ulong, IChunk>();
         public Chunk_DriverInit driverInitChunk { get; private set; }
+        public int CaptureBeginChunkIndex { get { return section.CaptureBeginChunkIndex; } }
 
         public void LoadChunksFromSection(Section section)
         {
