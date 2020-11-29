@@ -55,24 +55,17 @@ namespace Rdc
                 return;
             }
 
-            uint dataLen = createBuffer.Descriptor.ByteWidth;
             int dataOffset = createBuffer.pInitialData != null ? createBuffer.pInitialData.sysMemDataOffset : createBuffer.data.sysMemDataOffset;
 
             const int UID_PREFIX_COUNT = 5; // 前5个文字为 <UID: >前缀
 
-            uint perDrawLen = dataLen / 5; // 带阴影的文字会画5遍
+            uint perDrawLen = createBuffer.Descriptor.ByteWidth / 5; // 带阴影的文字会画5遍
             uint uidCount = (perDrawLen / stride) / 6 - UID_PREFIX_COUNT; // uid采用每个文字使用6个顶点的方式
             uint uidDataOffset = UID_PREFIX_COUNT * 6 * stride + offset;
-            uint uidDataLen = uidCount * 6 * stride;
-
-            byte[] fillBuff = new byte[6 * stride];
-            uint srcNumDataOffset = (uint)(uidDataOffset + fillWithNumIndex * 6 * stride);
-
-            Array.Copy(chunkManager.section.uncompressedData, (int)(dataOffset + srcNumDataOffset), fillBuff, 0, fillBuff.Length);
 
             // 找出指定字符使用的6个顶点的uv
             VertexBufferFormat[] fillVal = new VertexBufferFormat[6];
-            fixed(void * pFill = &fillBuff[0])
+            fixed(void * pFill = &chunkManager.section.uncompressedData[dataOffset + uidDataOffset + fillWithNumIndex * 6 * stride])
             {
                 VertexBufferFormat* pUidFill = (VertexBufferFormat*)pFill;
 
