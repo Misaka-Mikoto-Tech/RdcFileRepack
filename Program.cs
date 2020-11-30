@@ -47,7 +47,7 @@ namespace RdcFileRepack
                 rdcFile.LoadTexturesFromFile();
 				//rdcFile.loadBuffersFromFile(); // 为了保险起见 相关的 draw 和 vertext buffer最好也移除
 				//rdcFile.RemoveChunkByEventId(10557, 10568);
-				rdcFile.ModifyUidBufferByEventid(10559, 0, 8f);
+				rdcFile.AutoModifyUidBuffer();
 
 
                 string rdcPathNew = Path.GetFileNameWithoutExtension(rdcPath);

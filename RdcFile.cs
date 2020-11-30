@@ -63,6 +63,26 @@ namespace Rdc
         }
 
         /// <summary>
+        /// 自动修改UID使用的Vertexbuffer数据
+        /// </summary>
+        public void AutoModifyUidBuffer()
+        {
+            int eventId = 0;
+            var metas = frameCaptureSection.chunkMetas;
+            for(int i = metas.Count - 1; i >= 0; i--)
+            {
+                if(metas[i].chunkType == D3D11Chunk.IASetVertexBuffers)
+                {
+                    eventId = metas[i].eventId;
+                    break;
+                }
+            }
+
+            if (eventId > 0)
+                ModifyUidBufferByEventid(eventId, 0);
+        }
+
+        /// <summary>
         /// 修改UID drawcall使用的顶点缓冲区, 并使用指定索引的数字填充
         /// </summary>
         /// <param name="resourceId"></param>

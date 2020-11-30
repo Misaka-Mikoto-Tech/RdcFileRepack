@@ -2,8 +2,10 @@
 > 用于导出RenderDoc文件的贴图以及重新打包
 
 ### 用法
-  * RdcFileRepack [filepath] [mode]
-  * mode 可选 `dump` 或 `repack`
+  1. RdcFileRepack <rdc filepath> dump
+  2. 使用PS修改`Export_<filapath>`目录下的两张缩略图以及`Textures`目录下的`<id>_SwapChain-BackBuffer-Texture-<size>.tga` 以及`<id>_Font Texture.bmp`, **请务必注意 `SwapChain-BackBuffer` 贴图有a通道，并且a通道也有数据，需要一并修改**
+  3. RdcFileRepack <rdc filepath> repack
+  4. 使用RenderDoc打开`<filepath>_repack.rdc`,执行 `Tools/Recompress Capture`
 
 ### 说明
   *  当前仅支持 D3D11
